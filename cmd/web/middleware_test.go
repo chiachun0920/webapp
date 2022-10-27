@@ -1,10 +1,30 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func Test_application_ipFromContext(t *testing.T) {
+	// create an app var of type application
+	var app application
+
+	// get a context
+	ctx := context.Background()
+
+	// put something in the context
+	ctx = context.WithValue(ctx, contextUserKey, "123.123.123.123")
+
+	// call the function
+	ip := app.ipFromContext(ctx)
+
+	// perform the test
+	if ip != "123.123.123.123" {
+		t.Error("wrong value returend from context")
+	}
+}
 
 func Test_application_addIpToContext(t *testing.T) {
 	tests := []struct {
