@@ -8,9 +8,6 @@ import (
 )
 
 func Test_application_ipFromContext(t *testing.T) {
-	// create an app var of type application
-	var app application
-
 	// get a context
 	ctx := context.Background()
 
@@ -38,8 +35,6 @@ func Test_application_addIpToContext(t *testing.T) {
 		{"X-Forwarded-For", "192.168.0.1", "", false},
 		{"", "", "hello:world", false},
 	}
-
-	var app application
 
 	// create a dummy handler that we'll use to check the context
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
