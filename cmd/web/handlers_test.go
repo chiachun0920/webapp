@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -58,6 +60,11 @@ func Test_application_Home(t *testing.T) {
 	// check the status code
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected home handler return 200, but got %d", rr.Code)
+	}
+
+	body, _ := io.ReadAll(rr.Body)
+	if !strings.Contains(string(body), `From Session`) {
+		t.Error("Did not find correctly text 'From Session' in html")
 	}
 }
 
