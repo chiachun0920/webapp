@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -101,6 +102,91 @@ func Test_application_Home(t *testing.T) {
 		body, _ := io.ReadAll(rr.Body)
 		if !strings.Contains(string(body), e.expectedHTML) {
 			t.Errorf("%s: did not find expected html: %s", e.name, e.expectedHTML)
+		}
+	}
+}
+
+func Test_application_Login(t *testing.T) {
+	tests := []struct {
+		name               string
+		postedData         url.Values
+		expectedStatusCode int
+		expectedLoc        string
+	}{
+		{
+			name: "valid login",
+			postedData: url.Values{
+				"email":    {"admin@example.com"},
+				"password": {"secret"},
+			},
+			expectedStatusCode: http.StatusSeeOther,
+			expectedLoc:        "/user/profile",
+		},
+		{
+			name: "no required field",
+			postedData: url.Values{
+				"email":    {""},
+				"password": {""},
+			},
+			expectedStatusCode: http.StatusSeeOther,
+			expectedLoc:        "/",
+		},
+		{
+			name: "user not found",
+			postedData: url.Values{
+				"email":    {"not_found@example.com"},
+				"password": {"secret"},
+			},
+			expectedStatusCode: http.StatusSeeOther,
+			expectedLoc:        "/",
+		},
+		{
+			name: "wrong password",
+			postedData: url.Values{
+				"email":    {"admin@example.com"},
+				"password": {"worngsecret"},
+			},
+			expectedStatusCode: http.StatusSeeOther,
+			expectedLoc:        "/",
+		},
+	}
+
+	for _, e := range tests {
+		req, _ := http.NewRequest(
+			"POST",
+			"/login",
+			strings.NewReader(e.postedData.Encode()),
+		)
+		req = addContextAndSessionToRequest(req, app)
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(app.Login)
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != e.expectedStatusCode {
+			t.Errorf(
+				"%s: return wrong status code, expected %d, but got %d",
+				e.name,
+				e.expectedStatusCode,
+				rr.Code,
+			)
+		}
+
+		if loc, err := rr.Result().Location(); err != nil {
+			t.Errorf(
+				"%s: no location header set",
+				e.name,
+			)
+		} else {
+			if e.expectedLoc != loc.String() {
+				t.Errorf(
+					"%s: expected location: %s, but got %s",
+					e.name,
+					e.expectedLoc,
+					loc.String(),
+				)
+			}
 		}
 	}
 }
