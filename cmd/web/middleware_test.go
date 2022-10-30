@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"webapp/pkg/data"
 )
 
 func Test_application_ipFromContext(t *testing.T) {
@@ -71,5 +72,43 @@ func Test_application_addIpToContext(t *testing.T) {
 		}
 
 		handlerToTest.ServeHTTP(httptest.NewRecorder(), req)
+	}
+}
+
+func Test_application_auth(t *testing.T) {
+	var tests = []struct {
+		name   string
+		isAuth bool
+	}{
+		{
+			"logged in", true,
+		},
+		{
+			"not logged in", false,
+		},
+	}
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	})
+
+	for _, e := range tests {
+		handlerToTest := app.auth(nextHandler)
+		req := httptest.NewRequest("GET", "http://testing", nil)
+		req = addContextAndSessionToRequest(req, app)
+
+		if e.isAuth {
+			app.Session.Put(req.Context(), "user", data.User{ID: 1})
+		}
+
+		rr := httptest.NewRecorder()
+		handlerToTest.ServeHTTP(rr, req)
+
+		if e.isAuth && rr.Code != http.StatusOK {
+			t.Errorf("%s: expected status code of 200, but got %d", e.name, rr.Code)
+		}
+
+		if !e.isAuth && rr.Code != http.StatusTemporaryRedirect {
+			t.Errorf("%s: expected status code of 307, but got %d", e.name, rr.Code)
+		}
 	}
 }
