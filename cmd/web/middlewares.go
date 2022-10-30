@@ -34,6 +34,17 @@ func (app *application) addIPToContext(next http.Handler) http.Handler {
 	})
 }
 
+func (app *application) auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !app.Session.Exists(r.Context(), "user") {
+			app.Session.Put(r.Context(), "error", "Please login first")
+			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func getIP(r *http.Request) (string, error) {
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
